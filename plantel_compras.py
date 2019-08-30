@@ -131,8 +131,8 @@ def compras(jogadores,tatica,clube,orcamento,salario):
             jog=joga[(joga['Wage']<=sal) & (joga['Sale Value']<=orc)& (joga['Club']!=clube)]
             jog[pos]=jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0]
             jog=jog[jog[pos]>0]
-            if(len(pos)>0):
-                jog[pos]=(jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0])/(((jog['Wage']/salario)+(jog['Sale Value']/orcamento))/2)
+            if(len(jog)>0):
+                jog[pos]=(jog[pos])/(((jog['Wage']/salario)+(jog['Sale Value']/orcamento))/2)
                 jog=jog.sort_values(by=[pos], ascending=False)
                 bestpos.update({pos:jog.iloc[0][pos]})
                 bestpla.update({pos:jog.index[0]})
