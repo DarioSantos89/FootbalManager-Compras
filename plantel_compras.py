@@ -111,29 +111,48 @@ tatica_4_1_1_3_1=([{'Position':'GR','n':2},
 sporting=resumoplantel(plantel(jogadores_cal,tatica_4_1_1_3_1,club='Sporting'))
 
 def compras(jogadores,tatica,clube,orcamento,salario):
-    equipa=plantel(jogadores,tatica,clube)
+    aux=0
+    joga=jogadores.copy()
     posi=list(jogadores.columns[(jogadores.dtypes.values==np.dtype('float64'))])
+    compras=pd.DataFrame(columns=list(jogadores.columns))
+    joga['Wage']+=1
+    joga['Sale Value']+=1
+    equipa=plantel(joga,tatica,clube)
+    while(True):
+        orc=orcamento-compras['Sale Value'].sum()
+        sal=salario-compras['Wage'].sum()
 #ver a posição em que o melhor tem a maior dif para o meu ultimo
-    bestpos={}
-    bestpla={}
-    for pos in posi:
-        jog=jogadores
-        jog[pos]=jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0]
-        jog=jog.sort_values(by=[pos], ascending=False).filter(regex=pos)
-            bigpos.update({pos:jog.iloc[0][pos]})
-            bestpla.update({pos:jog.index[0]})
-        bigpos=sorted(bigpos.items(), key=lambda p: p[1], reverse=True)
-        
-    return equipa
+        bestpos={}
+        bestpla={}
+        for pos in posi:
+            if(equipa['Position'==pos]['jogador'][-1:].index[0] in compras.index):
+                orc+=equipa['Position'==pos]['jogador'][-1:]['Sale Value']
+                sal+=equipa['Position'==pos]['jogador'][-1:]['Wage']
+            jog=joga[(joga['Wage']<=sal) & (joga['Sale Value']<=orc)& (joga['Club']!=clube)]
+            jog[pos]=jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0]
+            jog=jog[jog[pos]>0]
+            if(len(pos)>0):
+                jog[pos]=(jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0])/(((jog['Wage']/salario)+(jog['Sale Value']/orcamento))/2)
+                jog=jog.sort_values(by=[pos], ascending=False)
+                bestpos.update({pos:jog.iloc[0][pos]})
+                bestpla.update({pos:jog.index[0]})
+        if(len(bestpos)>0):
+            bestpos=sorted(bestpos.items(), key=lambda p: p[1], reverse=True)
+            compras=compras.append(joga.loc[bestpla[bestpos[0][0]]])
+            print(bestpos[0][0])
+            print(compras)
+            joga.loc[bestpla[bestpos[0][0]]]['Club']=clube
+            print(joga.loc[bestpla[bestpos[0][0]]])
+            equipa=plantel(joga,tatica,clube)
+            plant=resumoplantel(equipa)
+            for player in list(compras.index):
+                if(player not in plant.index):
+                    compras=compras.drop(player)                    
+            aux+=1
+        else:
+            break
+        if(len(compras.index)>22 or (aux>22)):
+            break
+    return (resumoplantel(equipa),compras)
 
-comprassporting=compras(jogadores_cal,tatica_4_1_1_3_1,clube='Sporting',orcamento=0,salario=0)
-a=posicoes[0]
-orcamento=100000000
-salario=1000000
-b=comprassporting['Position'==a]['jogador'][-1:][a]
-jog=jogadores_cal
-jog['Wage']+=1
-jog['Value']+=1
-jog[a]=(jog[a]-comprassporting['Position'==a]['jogador'][-1:][a][0])/((jog['Wage']/salario+jog['Value']/orcamento)/2)
-jog[a]=jog[a]
-jog=jog.sort_values(by=[a], ascending=False).filter(regex=a)
+comprassporting=compras(jogadores_cal,tatica_4_1_1_3_1,clube='Sporting',orcamento=100000000,salario=1000000)
