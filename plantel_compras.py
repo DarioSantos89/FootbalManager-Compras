@@ -5,7 +5,7 @@ def convert_percent(val):
     new_val = val.replace('%', '').replace(",",".")
     return float(new_val) / 100
 
-data =pd.read_csv("D:\\FM\\Players\\jogadores.csv",encoding="cp1252", sep=";",thousands="\xa0",
+data =pd.read_csv("jogadores.csv",encoding="cp1252", sep=";",thousands="\xa0",
                   header=0, decimal=",",index_col=[0,1],
                   converters={"GK Rating":convert_percent,"DL Rating":convert_percent,
                   "DC Rating":convert_percent,"DR Rating":convert_percent,
