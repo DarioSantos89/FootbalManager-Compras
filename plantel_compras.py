@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 def convert_percent(val):
     new_val = val.replace('%', '').replace(",",".")
     return float(new_val) / 100
@@ -61,7 +62,8 @@ jog=jogadores_cal.groupby(['Age']).mean().filter(regex='rankdiff')
 jogadores_cal=calcular_atributo(jogadores,posicoes)
 # escolha do plantel
 
-def plantel (jogadores,tatica,club):
+def plantel (jogadores,tatic,club):
+    tatica=copy.deepcopy(tatic)
     club=jogadores[jogadores['Club']==club]
     for i in range(len(tatica)):
         tatica[i]['jogador']=pd.DataFrame(columns=list(club.columns))
@@ -76,6 +78,7 @@ def plantel (jogadores,tatica,club):
             bestpla.update({pos:jog.index[0]})
         bigpos=sorted(bigpos.items(), key=lambda p: p[1], reverse=True)
 #index dessa posição
+        print(bigpos[0][0])
         indexaux=[t for t,_ in enumerate(tatica) if _['Position'] == bigpos[0][0]]
         if len(indexaux)==0:
             indexaux=0
@@ -88,14 +91,15 @@ def plantel (jogadores,tatica,club):
             posi.remove(bigpos[0][0])
     return tatica
 
-def resumoplantel (plantel):
-    equipa=pd.DataFrame(columns=list(plantel[0]['jogador'].columns))
-    equipa.insert(0,'Pos','')    
-    for pos in plantel:
-        pos['jogador'].insert(0,'Pos',pos['Position'])
-        equipa=equipa.append(pos['jogador'], sort=False)
-    return equipa
-
+def resumoplantel (plante):
+    equipa=pd.DataFrame(columns=list(plante[0]['jogador'].columns))
+    equipa.insert(0,'Pos','')
+    for pos in plante:
+        joga=pd.DataFrame(columns=list(plante[0]['jogador'].columns))
+        joga=pos['jogador'].copy()
+        joga.insert(0,'Pos',pos['Position'])
+        equipa=equipa.append(joga, sort=False)
+    return(equipa)
 
 tatica_4_1_1_3_1=([{'Position':'GR','n':2},
         {'Position':'DR','n':2},
@@ -107,17 +111,16 @@ tatica_4_1_1_3_1=([{'Position':'GR','n':2},
         {'Position':'AMC','n':2},
         {'Position':'AML','n':2},
         {'Position':'FC','n':2}])
-
+    
 sporting=resumoplantel(plantel(jogadores_cal,tatica_4_1_1_3_1,club='Sporting'))
 
 def compras(jogadores,tatica,clube,orcamento,salario):
-    aux=0
     joga=jogadores.copy()
     posi=list(jogadores.columns[(jogadores.dtypes.values==np.dtype('float64'))])
     compras=pd.DataFrame(columns=list(jogadores.columns))
     joga['Wage']+=1
     joga['Sale Value']+=1
-    equipa=plantel(joga,tatica,clube)
+    equi=plantel(joga,tatica,clube)
     while(True):
         orc=orcamento-compras['Sale Value'].sum()
         sal=salario-compras['Wage'].sum()
@@ -125,34 +128,39 @@ def compras(jogadores,tatica,clube,orcamento,salario):
         bestpos={}
         bestpla={}
         for pos in posi:
-            if(equipa['Position'==pos]['jogador'][-1:].index[0] in compras.index):
-                orc+=equipa['Position'==pos]['jogador'][-1:]['Sale Value']
-                sal+=equipa['Position'==pos]['jogador'][-1:]['Wage']
+            indexaux=[j for j,_ in enumerate(equi) if _['Position'] == pos]
+            if len(indexaux)==0:
+                indexaux=0
+            else:
+                indexaux=indexaux[0]
+            if(equi[indexaux]['jogador'][-1:].index[0] in compras.index):
+                orc+=equi[indexaux]['jogador'][-1:]['Sale Value'][0]
+                sal+=equi[indexaux]['jogador'][-1:]['Wage'][0]
             jog=joga[(joga['Wage']<=sal) & (joga['Sale Value']<=orc)& (joga['Club']!=clube)]
-            jog[pos]=jog[pos]-equipa['Position'==pos]['jogador'][-1:][pos][0]
+            jog[pos]=jog[pos]-equi[indexaux]['jogador'][-1:][pos][0]
             jog=jog[jog[pos]>0]
             if(len(jog)>0):
                 jog[pos]=(jog[pos])/(((jog['Wage']/salario)+(jog['Sale Value']/orcamento))/2)
                 jog=jog.sort_values(by=[pos], ascending=False)
                 bestpos.update({pos:jog.iloc[0][pos]})
+               # print(pos)
+                #print(jog.iloc[0][pos])
                 bestpla.update({pos:jog.index[0]})
+                #print(jog.index[0])
         if(len(bestpos)>0):
             bestpos=sorted(bestpos.items(), key=lambda p: p[1], reverse=True)
             compras=compras.append(joga.loc[bestpla[bestpos[0][0]]])
             print(bestpos[0][0])
-            print(compras)
+            print(bestpla[bestpos[0][0]])
             joga.loc[bestpla[bestpos[0][0]]]['Club']=clube
-            print(joga.loc[bestpla[bestpos[0][0]]])
-            equipa=plantel(joga,tatica,clube)
-            plant=resumoplantel(equipa)
+            equi=plantel(joga,tatica,clube)
+            plant=resumoplantel(equi)
             for player in list(compras.index):
                 if(player not in plant.index):
-                    compras=compras.drop(player)                    
-            aux+=1
+                    compras=compras.drop(player)
+            print(compras)                    
         else:
             break
-        if(len(compras.index)>22 or (aux>22)):
-            break
-    return (resumoplantel(equipa),compras)
+    return (resumoplantel(equi),compras)
 
 comprassporting=compras(jogadores_cal,tatica_4_1_1_3_1,clube='Sporting',orcamento=100000000,salario=1000000)
