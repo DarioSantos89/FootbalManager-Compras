@@ -7,7 +7,7 @@ def convert_percent(val):
     return float(new_val) / 100
 
 data =pd.read_csv("jogadores.csv",encoding="cp1252", sep=";",thousands="\xa0",
-                  header=0, decimal=",",index_col=[0,1],
+                  header=0, decimal=",",index_col=[0,1,2],
                   converters={"GK Rating":convert_percent,"DL Rating":convert_percent,
                   "DC Rating":convert_percent,"DR Rating":convert_percent,
                   "DM Rating":convert_percent,"MC Rating":convert_percent,
@@ -26,6 +26,7 @@ jogadores=data.rename(columns={"FS Rating":"FC Rating","FS Pot Rating":"FC Pot R
 #estimar o potencial a acrescentar em cada idade
 posicoes=list(jogadores.columns[(jogadores.dtypes.values==np.dtype('float64'))])
 posicoes=list(set([pos.replace(' Rating','').replace(' Pot','') for pos in posicoes]))
+
 def calcular_atributo(jogadores,posicoes):
     Idades=pd.DataFrame(index=list(set(jogadores['Age'])))
     for pos in posicoes:
@@ -78,7 +79,6 @@ def plantel (jogadores,tatic,club):
             bestpla.update({pos:jog.index[0]})
         bigpos=sorted(bigpos.items(), key=lambda p: p[1], reverse=True)
 #index dessa posição
-        print(bigpos[0][0])
         indexaux=[t for t,_ in enumerate(tatica) if _['Position'] == bigpos[0][0]]
         if len(indexaux)==0:
             indexaux=0
@@ -143,17 +143,15 @@ def compras(jogadores,tatica,clube,orcamento,salario):
                 jog[pos]=(jog[pos])/(((jog['Wage']/salario)+(jog['Sale Value']/orcamento))/2)
                 jog=jog.sort_values(by=[pos], ascending=False)
                 bestpos.update({pos:jog.iloc[0][pos]})
-               # print(pos)
-                #print(jog.iloc[0][pos])
                 bestpla.update({pos:jog.index[0]})
-                #print(jog.index[0])
         if(len(bestpos)>0):
             bestpos=sorted(bestpos.items(), key=lambda p: p[1], reverse=True)
             compras=compras.append(joga.loc[bestpla[bestpos[0][0]]])
-            print(bestpos[0][0])
-            print(bestpla[bestpos[0][0]])
+            print(clube)
             joga.loc[bestpla[bestpos[0][0]]]['Club']=clube
+            print(joga.loc[bestpla[bestpos[0][0]]])
             equi=plantel(joga,tatica,clube)
+            print(equi)
             plant=resumoplantel(equi)
             for player in list(compras.index):
                 if(player not in plant.index):
