@@ -147,11 +147,9 @@ def compras(jogadores,tatica,clube,orcamento,salario):
         if(len(bestpos)>0):
             bestpos=sorted(bestpos.items(), key=lambda p: p[1], reverse=True)
             compras=compras.append(joga.loc[bestpla[bestpos[0][0]]])
-            print(clube)
-            joga.loc[bestpla[bestpos[0][0]]]['Club']=clube
-            print(joga.loc[bestpla[bestpos[0][0]]])
+            joga.set_value(bestpla[bestpos[0][0]],['Club'],clube)
+            print(bestpla[bestpos[0][0]])
             equi=plantel(joga,tatica,clube)
-            print(equi)
             plant=resumoplantel(equi)
             for player in list(compras.index):
                 if(player not in plant.index):
